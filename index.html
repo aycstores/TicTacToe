@@ -1,34 +1,295 @@
-<!DOCTYPE html>
-<html>
+!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tap Magic Colors! 🌈</title>
-  <style>
-    body { margin:0; height:100vh; transition:background 0.6s; display:flex; align-items:center; justify-content:center; font-family:sans-serif; }
-    #btn { font-size:25vw; padding:30px; border-radius:50%; animation:pulse 2s infinite; box-shadow:0 10px 30px rgba(0,0,0,0.3); }
-    @keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Tic Tac Toe Fun for Toddlers!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+            color: #333;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        h1 {
+            font-size: clamp(2rem, 8vmin, 4rem);
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
+        }
+        #status {
+            font-size: clamp(2.5rem, 10vmin, 5rem);
+            font-weight: bold;
+            margin: 2vmin 0;
+            text-shadow: 2px 2px 4px rgba(255,255,255,0.8);
+            min-height: 5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            width: min(90vmin, 600px);
+            height: min(90vmin, 600px);
+            gap: 1vmin;
+            margin: 2vmin auto;
+        }
+        .cell {
+            aspect-ratio: 1;
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border: 0.8vmin solid #4a4a4a;
+            border-radius: 3vmin;
+            font-size: 22vmin;
+            line-height: 0.85;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            touch-action: manipulation;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+        .cell:hover:not(:empty) {
+            transform: scale(1.03);
+            box-shadow: 0 0 2vmin rgba(255, 215, 0, 0.6);
+        }
+        .cell:active {
+            transform: scale(0.96);
+        }
+        .winner {
+            background: linear-gradient(145deg, #ffd700, #ffed4e) !important;
+            border-color: #ff4500 !important;
+            animation: celebrate 0.8s ease-in-out infinite alternate;
+        }
+        @keyframes celebrate {
+            0% { transform: scale(1) rotate(0deg); }
+            100% { transform: scale(1.12) rotate(8deg); box-shadow: 0 0 3vmin rgba(255, 215, 0, 0.8); }
+        }
+        #restart {
+            font-size: clamp(1.5rem, 6vmin, 2.5rem);
+            padding: 1.5vmin 4vmin;
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 3vmin;
+            cursor: pointer;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            margin-top: 2vmin;
+            min-height: 4rem;
+            box-shadow: 0 0.5vmin 1vmin rgba(0,0,0,0.2);
+        }
+        #restart:hover {
+            transform: translateY(-0.3vmin);
+            box-shadow: 0 1vmin 2vmin rgba(0,0,0,0.3);
+        }
+        #restart:active {
+            transform: translateY(0);
+        }
+    </style>
 </head>
 <body>
-  <div id="btn">Tap Me! ✨</div>
+    <h1>🎲 Tic Tac Toe Fun!</h1>
+    <div id="status">Tap a square to start!</div>
+    <div id="board"></div>
+    <button id="restart">🔁 New Game</button>
 
-  <script>
-    const colors = ["#FF6B6B","#4ECDC4","#45B7D1","#FFA07A","#98D8C8","#F7DC6F","#BB8FCE","#85C1E2","#F8B739"];
-    const words = ["Yay!","Wow!","Magic!","Boing!","Happy!","Hehe!","Woo!","Yippee!","Fun!"];
+    <script>
+        let board = Array(9).fill(null);
+        let gameOver = false;
+        // Player and computer symbols — change to emojis if you like
+        let playerSym = 'X';
+        let compSym = 'O';
+        let cells = [];
+        const status = document.getElementById('status');
+        const boardEl = document.getElementById('board');
+        const restartBtn = document.getElementById('restart');
 
-    document.getElementById("btn").onclick = () => {
-      const color = colors[Math.floor(Math.random()*colors.length)];
-      const word = words[Math.floor(Math.random()*words.length)];
-      document.body.style.background = color;
-      document.getElementById("btn").innerText = word;
-      
-      // Sound
-      const audio = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3");
-      audio.play();
-      
-      // Voice
-      speechSynthesis.speak(new SpeechSynthesisUtterance(word));
-    };
-  </script>
+        const winCombos = [
+            [0,1,2], [3,4,5], [6,7,8],
+            [0,3,6], [1,4,7], [2,5,8],
+            [0,4,8], [2,4,6]
+        ];
+
+        function init() {
+            boardEl.innerHTML = '';
+            cells = [];
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.index = i;
+                cell.addEventListener('click', handleClick);
+                boardEl.appendChild(cell);
+                cells.push(cell);
+            }
+            board.fill(null);
+            gameOver = false;
+            status.textContent = 'Tap a square to start!';
+            status.style.color = '#333';
+        }
+
+        function handleClick(e) {
+            if (gameOver) return;
+            const idx = parseInt(e.currentTarget.dataset.index);
+            if (board[idx] !== null) return;
+
+            // Player move
+            board[idx] = playerSym;
+            cells[idx].textContent = playerSym;
+            playSound(800, 150);
+
+            const playerWin = getWin(playerSym);
+            if (playerWin) {
+                gameOver = true;
+                status.textContent = 'You Win! 🎉';
+                status.style.color = '#4CAF50';
+                highlightWin(playerWin);
+                speak('Yay! You win!');
+                return;
+            }
+
+            if (board.every(cell => cell !== null)) {
+                gameOver = true;
+                status.textContent = 'Tie! Great job!';
+                status.style.color = '#ff9800';
+                return;
+            }
+
+            // Computer's turn after delay
+            status.textContent = 'Robot thinking...';
+            status.style.color = '#9C27B0';
+            setTimeout(aiMove, 800);
+        }
+
+        function aiMove() {
+            // Try to win
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === null) {
+                    board[i] = compSym;
+                    if (getWin(compSym)) {
+                        doCompMove(i);
+                        return;
+                    }
+                    board[i] = null;
+                }
+            }
+            // Try to block player
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === null) {
+                    board[i] = playerSym;
+                    if (getWin(playerSym)) {
+                        board[i] = null;
+                        doCompMove(i);
+                        return;
+                    }
+                    board[i] = null;
+                }
+            }
+            // Take center
+            if (board[4] === null) {
+                doCompMove(4);
+                return;
+            }
+            // Random move
+            const avail = [];
+            for (let i = 0; i < 9; i++) {
+                if (board[i] === null) avail.push(i);
+            }
+            const randIdx = avail[Math.floor(Math.random() * avail.length)];
+            doCompMove(randIdx);
+        }
+
+        function doCompMove(idx) {
+            board[idx] = compSym;
+            cells[idx].textContent = compSym;
+            playSound(450, 200);
+
+            const compWin = getWin(compSym);
+            if (compWin) {
+                gameOver = true;
+                status.textContent = 'Robot Wins! 🤖 Try again!';
+                status.style.color = '#f44336';
+                highlightWin(compWin);
+                return;
+            }
+
+            if (board.every(cell => cell !== null)) {
+                gameOver = true;
+                status.textContent = 'Tie! Good try!';
+                status.style.color = '#ff9800';
+                return;
+            }
+
+            status.textContent = 'Your turn!';
+            status.style.color = '#4CAF50';
+        }
+
+        function getWin(sym) {
+            for (let combo of winCombos) {
+                if (board[combo[0]] === sym &&
+                    board[combo[1]] === sym &&
+                    board[combo[2]] === sym) {
+                    return combo;
+                }
+            }
+            return null;
+        }
+
+        function highlightWin(combo) {
+            combo.forEach(i => {
+                cells[i].classList.add('winner');
+            });
+        }
+
+        function playSound(freq, duration) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.frequency.value = freq;
+                oscillator.type = 'triangle';
+                gainNode.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration / 1000);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + duration / 1000);
+            } catch (e) {
+                // Ignore audio errors
+            }
+        }
+
+        function speak(text) {
+            try {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9;
+                utterance.pitch = 1.2;
+                utterance.volume = 0.8;
+                speechSynthesis.speak(utterance);
+            } catch (e) {
+                // Ignore speech errors
+            }
+        }
+
+        // Event listeners
+        restartBtn.addEventListener('click', init);
+
+        // Initialize game
+        init();
+    </script>
 </body>
 </html>
